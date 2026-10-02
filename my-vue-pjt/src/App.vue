@@ -17,6 +17,13 @@
             <RouterLink class="nav-link" :to="{ name: 'recommended' }" active-class="active">Recommended</RouterLink>
           </li>
         </ul>
+        <div v-if="MOVIE_API_SOURCE === 'django'" class="d-flex align-items-center gap-2 ms-auto">
+          <template v-if="auth.isLoggedIn">
+            <span class="text-light small">{{ auth.username }}</span>
+            <button class="btn btn-outline-light btn-sm" type="button" @click="onLogout">로그아웃</button>
+          </template>
+          <RouterLink v-else class="btn btn-outline-light btn-sm" :to="{ name: 'login' }">로그인</RouterLink>
+        </div>
       </div>
     </nav>
   </header>
@@ -27,5 +34,15 @@
 </template>
 
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterLink, RouterView, useRouter } from 'vue-router'
+import { MOVIE_API_SOURCE } from '@/api/movies'
+import { useAuthStore } from '@/stores/auth'
+
+const router = useRouter()
+const auth = useAuthStore()
+
+const onLogout = () => {
+  auth.logout()
+  router.push({ name: 'home' })
+}
 </script>

@@ -17,7 +17,7 @@
       </ul>
 
       <div class="mb-3">
-        <span v-for="genre in movie.genres" :key="genre.id" class="badge rounded-pill text-bg-primary me-1">
+        <span v-for="genre in movie.genres" :key="genre.name" class="badge rounded-pill text-bg-primary me-1">
           {{ genre.name }}
         </span>
       </div>

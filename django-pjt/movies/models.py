@@ -20,6 +20,10 @@ class Movie(models.Model):
     budget = models.IntegerField()
     revenue = models.IntegerField()
     runtime = models.IntegerField()
+    # 프론트엔드 화면(카드, 상세)용 TMDB 데이터 - problem/fetch_tmdb.py 로 수집
+    overview = models.TextField(blank=True)
+    poster_path = models.CharField(max_length=255, blank=True)
+    vote_average = models.FloatField(default=0)
     # M:N - movies_movie_genres 중개 테이블
     genres = models.ManyToManyField(Genre, related_name='movies')
 

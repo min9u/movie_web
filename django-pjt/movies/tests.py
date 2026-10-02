@@ -32,15 +32,24 @@ class MovieApiTests(APITestCase):
         inside_out = next(movie for movie in response.data if movie['id'] == 1022789)
         self.assertEqual(
             set(inside_out),
-            {'id', 'title', 'release_date', 'popularity', 'budget', 'revenue', 'runtime', 'genres'},
+            {
+                'id', 'title', 'release_date', 'popularity', 'budget', 'revenue', 'runtime',
+                'overview', 'poster_path', 'vote_average', 'genres',
+            },
         )
         self.assertCountEqual(inside_out['genres'], [16, 10751, 18, 12, 35])
+        # 평점 높은 순
+        averages = [movie['vote_average'] for movie in response.data]
+        self.assertEqual(averages, sorted(averages, reverse=True))
 
     # F04, F09
     def test_movie_detail(self):
         response = self.client.get('/api/v1/movies/1022789/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['title'], 'Inside Out 2')
+        self.assertEqual(response.data['id'], 1022789)
+        self.assertTrue(response.data['overview'])
+        self.assertTrue(response.data['poster_path'].startswith('/'))
         self.assertEqual(set(response.data['genres'][0]), {'name'})
         self.assertEqual(set(response.data['cast_set'][0]), {'name', 'character', 'order'})
         self.assertEqual(set(response.data['review_set'][0]), {'author', 'content', 'rating'})
@@ -51,6 +60,19 @@ class MovieApiTests(APITestCase):
 
     def test_movie_detail_not_found(self):
         self.assertEqual(self.client.get('/api/v1/movies/1/').status_code, 404)
+
+    # 날씨 기반 추천
+    def test_movie_recommend(self):
+        response = self.client.get('/api/v1/movies/recommend/', {'genre': 27})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(27, response.data['genres'])
+        self.assertIn('poster_path', response.data)
+
+    def test_movie_recommend_invalid_genre(self):
+        self.assertEqual(self.client.get('/api/v1/movies/recommend/').status_code, 400)
+        self.assertEqual(self.client.get('/api/v1/movies/recommend/', {'genre': 'abc'}).status_code, 400)
+        # 영화가 없는 장르(TV 영화)
+        self.assertEqual(self.client.get('/api/v1/movies/recommend/', {'genre': 10770}).status_code, 404)
 
     # F05
     def test_review_list(self):

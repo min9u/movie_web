@@ -56,12 +56,14 @@ def make_genres(details):
     ]
 
 
-# movies.csv 와 movie_details.csv 를 movie_id 기준으로 통합
-def make_movies(movies, details):
+# movies.csv, movie_details.csv, movie_tmdb.csv(fetch_tmdb.py 로 수집)를 movie_id 기준으로 통합
+def make_movies(movies, details, tmdb_rows):
     details_by_movie = {row['movie_id']: row for row in details}
+    tmdb_by_movie = {row['movie_id']: row for row in tmdb_rows}
     fixtures = []
     for row in movies:
         detail = details_by_movie[row['id']]
+        tmdb = tmdb_by_movie[row['id']]
         fixtures.append({
             'model': 'movies.movie',
             'pk': int(row['id']),
@@ -72,6 +74,9 @@ def make_movies(movies, details):
                 'budget': int(detail['budget']),
                 'revenue': int(detail['revenue']),
                 'runtime': int(detail['runtime']),
+                'overview': tmdb['overview'],
+                'poster_path': tmdb['poster_path'],
+                'vote_average': float(tmdb['vote_average']),
                 'genres': to_genre_ids(detail['genres']),
             },
         })
@@ -141,11 +146,12 @@ def main():
     details = read_csv('movie_details.csv')
     casts = read_csv('movie_cast.csv')
     reviews = read_csv('movie_reviews.csv')
+    tmdb_rows = read_csv('movie_tmdb.csv')
     users = make_users(reviews)
 
     write_fixture('accounts', 'users.json', users)
     write_fixture('movies', 'genres.json', make_genres(details))
-    write_fixture('movies', 'movies.json', make_movies(movies, details))
+    write_fixture('movies', 'movies.json', make_movies(movies, details, tmdb_rows))
     write_fixture('movies', 'casts.json', make_casts(casts))
     write_fixture('movies', 'reviews.json', make_reviews(reviews, users))
 

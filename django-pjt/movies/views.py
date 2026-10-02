@@ -1,3 +1,5 @@
+import random
+
 from django.db.models import Avg, Count
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -16,10 +18,10 @@ def genre_list(request):
     return Response(serializer.data)
 
 
-# F03: 전체 영화 목록 조회
+# F03: 전체 영화 목록 조회 (프론트엔드의 최고 평점 목록용으로 평점 높은 순)
 @api_view(['GET'])
 def movie_list(request):
-    movies = Movie.objects.prefetch_related('genres')
+    movies = Movie.objects.prefetch_related('genres').order_by('-vote_average')
     serializer = MovieListSerializer(movies, many=True)
     return Response(serializer.data)
 
@@ -34,6 +36,24 @@ def movie_detail(request, movie_pk):
     ).prefetch_related('genres', 'cast_set', 'review_set__author')
     movie = get_object_or_404(movies, pk=movie_pk)
     serializer = MovieSerializer(movie)
+    return Response(serializer.data)
+
+
+# 날씨 기반 추천: 장르에 속한 영화 중 랜덤 1편
+@api_view(['GET'])
+def movie_recommend(request):
+    genre_id = request.query_params.get('genre')
+    if not genre_id or not genre_id.isdigit():
+        return Response({'detail': 'genre 쿼리 파라미터(장르 id)가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    movies = Movie.objects.filter(genres=genre_id)
+    # order_by('?') 는 전체를 랜덤 정렬하므로, Count 로 개수를 구한 뒤 랜덤 offset 1건만 조회
+    total = movies.aggregate(total=Count('id'))['total']
+    if not total:
+        return Response({'detail': '해당 장르의 영화가 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+    movie = movies.order_by('id').prefetch_related('genres')[random.randrange(total)]
+    serializer = MovieListSerializer(movie)
     return Response(serializer.data)
 
 
